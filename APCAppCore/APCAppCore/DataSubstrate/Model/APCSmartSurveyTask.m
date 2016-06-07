@@ -1,36 +1,36 @@
-// 
-//  APCSmartSurveyTask.m 
-//  APCAppCore 
-// 
-// Copyright (c) 2015, Apple Inc. All rights reserved. 
-// 
+//
+//  APCSmartSurveyTask.m
+//  APCAppCore
+//
+// Copyright (c) 2015, Apple Inc. All rights reserved.
+//
 // Redistribution and use in source and binary forms, with or without modification,
 // are permitted provided that the following conditions are met:
-// 
+//
 // 1.  Redistributions of source code must retain the above copyright notice, this
 // list of conditions and the following disclaimer.
-// 
-// 2.  Redistributions in binary form must reproduce the above copyright notice, 
-// this list of conditions and the following disclaimer in the documentation and/or 
-// other materials provided with the distribution. 
-// 
-// 3.  Neither the name of the copyright holder(s) nor the names of any contributors 
-// may be used to endorse or promote products derived from this software without 
-// specific prior written permission. No license is granted to the trademarks of 
-// the copyright holders even if such marks are included in this software. 
-// 
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" 
-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
-// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE 
-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER 
-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, 
-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
-// 
- 
+//
+// 2.  Redistributions in binary form must reproduce the above copyright notice,
+// this list of conditions and the following disclaimer in the documentation and/or
+// other materials provided with the distribution.
+//
+// 3.  Neither the name of the copyright holder(s) nor the names of any contributors
+// may be used to endorse or promote products derived from this software without
+// specific prior written permission. No license is granted to the trademarks of
+// the copyright holders even if such marks are included in this software.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+//
+
 #import "APCSmartSurveyTask.h"
 #import <ResearchKit/ResearchKit.h>
 #import <BridgeSDK/BridgeSDK.h>
@@ -96,30 +96,30 @@ static APCDummyObject * _dummyObject;
         self.rkSteps = [NSMutableDictionary dictionary];
         self.staticStepIdentifiers = [NSMutableArray array];
         self.setOfIdentifiers = [NSMutableSet set];
-        
+
         NSArray * elements = survey.elements;
-        
+
         [elements enumerateObjectsUsingBlock:^(id object, NSUInteger __unused idx, BOOL * __unused stop) {
             if ([object isKindOfClass:[SBBSurveyQuestion class]]) {
                 SBBSurveyQuestion * obj = (SBBSurveyQuestion*) object;
                 self.rkSteps[obj.identifier] = [APCSmartSurveyTask rkStepFromSBBSurveyQuestion:obj];
-                
+
                 [self.staticStepIdentifiers addObject:obj.identifier];
                 [self.setOfIdentifiers addObject:obj.identifier];
-                
+
                 NSArray * rulesArray = [[obj constraints] rules];
                 if (rulesArray) {
                     self.rules[obj.identifier] = [self createArrayOfDictionaryForRules:rulesArray];
                 }
             }
         }];
-        
+
         NSAssert(self.staticStepIdentifiers.count > 0, @"Survey does not have any questions");
         NSAssert((self.staticStepIdentifiers.count == self.setOfIdentifiers.count), @"Duplicate Identifiers in Survey! Please rename them!");
-        
+
         //For Debugging duplicates. Copy paste below commented line in lldb to look for duplicates
         //[self.staticStepIdentifiers sortedArrayUsingSelector: @selector(localizedCaseInsensitiveCompare:)];
-        
+
         self.dynamicStepIdentifiers = [self.staticStepIdentifiers mutableCopy];
     }
     return self;
@@ -139,7 +139,7 @@ static APCDummyObject * _dummyObject;
         if (rule.skipTo) {
             ruleDict[kRuleSkipToKey] = rule.skipTo;
         }
-        
+
         [newRulesArray addObject:ruleDict];
     }];
     return newRulesArray;
@@ -149,7 +149,7 @@ static APCDummyObject * _dummyObject;
 - (ORKStep *)stepAfterStep:(ORKStep *)step withResult:(ORKTaskResult *)result
 {
     [self refillDynamicStepIdentifiersWithCurrentStepIdentifier:step.identifier];
-    
+
     //If Step has rules, process answer. Otherwise keep moving
     NSArray * rulesForThisStep = self.rules[step.identifier];
     NSString * skipToStep = nil;
@@ -162,17 +162,17 @@ static APCDummyObject * _dummyObject;
                 skipToStep = [self processRules:rulesForThisStep forAnswer:[questionResult consolidatedAnswer]];
             }
         }
-        
+
         if ([skipToStep isEqualToString:kEndOfSurveyMarker]) {
             return nil;
         }
-        
+
         //If there is new skipToStep then skip to that step
         if (skipToStep) {
             [self adjustDynamicStepIdentifersForSkipToStep:skipToStep from:step.identifier];
         }
     }
-    
+
     NSString * nextStepIdentifier = [self nextStepIdentifier:YES currentIdentifier:step.identifier];
     return nextStepIdentifier? self.rkSteps[nextStepIdentifier] : nil;
 }
@@ -221,7 +221,7 @@ static APCDummyObject * _dummyObject;
     if (currentIndex == NSNotFound || skipToIndex == NSNotFound) {
         return;
     }
-    
+
     if (skipToIndex > currentIndex) {
         while (![self.dynamicStepIdentifiers[currentIndex+1] isEqualToString:skipToStep]) {
             [self.dynamicStepIdentifiers removeObjectAtIndex:currentIndex+1];
@@ -236,14 +236,14 @@ static APCDummyObject * _dummyObject;
     currentIndexInDynamic = currentIndexInDynamic == NSNotFound ? 0 : currentIndexInDynamic;
     NSRange rangeInDynamic = NSMakeRange(currentIndexInDynamic, self.dynamicStepIdentifiers.count - currentIndexInDynamic);
     [self.dynamicStepIdentifiers removeObjectsInRange:rangeInDynamic];
-    
+
     //Add array from static
     NSUInteger currentIndexInStatic = [self.staticStepIdentifiers indexOfObject:stepIdentifier];
     currentIndexInStatic = currentIndexInStatic == NSNotFound ? 0 : currentIndexInStatic;
     NSRange rangeInStatic = NSMakeRange(currentIndexInStatic, self.staticStepIdentifiers.count - currentIndexInStatic);
     NSIndexSet * indexSet = [NSIndexSet indexSetWithIndexesInRange:rangeInStatic];
     NSArray * subArray = [self.staticStepIdentifiers objectsAtIndexes:indexSet];
-    
+
     [self.dynamicStepIdentifiers addObjectsFromArray:subArray];
 }
 
@@ -291,14 +291,14 @@ static APCDummyObject * _dummyObject;
     }
     id value                = [rule valueForKeyPath:kRuleValueKey];
     NSString * skipToValue  = [rule valueForKeyPath:kRuleSkipToKey];
-    
+
     //Skip
     if ([operator isEqualToString:kOperatorSkip] && answer == nil) {
         retValue = skipToValue;
     }
-    
+
     NSNumberFormatter * formatter = [NSNumberFormatter new];
-    
+
     NSNumber * answerNumber;
     NSNumber * valueNumber;
     if ([answer isKindOfClass:[NSString class]]) {
@@ -308,7 +308,7 @@ static APCDummyObject * _dummyObject;
     {
         answerNumber = answer;
     }
-    
+
     if ([value isKindOfClass:[NSString class]]) {
         valueNumber =[formatter numberFromString:value];
     }
@@ -316,10 +316,10 @@ static APCDummyObject * _dummyObject;
     {
         valueNumber = value;
     }
-    
+
     CGFloat answerDouble = answerNumber.doubleValue;
     CGFloat valueDouble = valueNumber.doubleValue;
-    
+
     //Equal
     if ([operator isEqualToString:kOperatorEqual]) {
         if ([answer isKindOfClass:[NSString class]] && [value isKindOfClass:[NSString class]] ) {
@@ -336,7 +336,7 @@ static APCDummyObject * _dummyObject;
             }
         }
     }
-    
+
     //Not Equal
     if ([operator isEqualToString:kOperatorNotEqual]) {
         if ([answer isKindOfClass:[NSString class]] && [value isKindOfClass:[NSString class]] ) {
@@ -353,7 +353,7 @@ static APCDummyObject * _dummyObject;
             }
         }
     }
-    
+
     //Other Than
     if ([operator isEqualToString:kOperatorOtherThan]) {
         if (answer == nil) {
@@ -373,8 +373,8 @@ static APCDummyObject * _dummyObject;
             }
         }
     }
-    
-    
+
+
     //Greater Than
     if ([operator isEqualToString:kOperatorGreaterThan]) {
         if (answerNumber && valueNumber) {
@@ -383,7 +383,7 @@ static APCDummyObject * _dummyObject;
             }
         }
     }
-    
+
     //Lesser Than
     if ([operator isEqualToString:kOperatorLessThan]) {
         if (answerNumber && valueNumber) {
@@ -392,7 +392,7 @@ static APCDummyObject * _dummyObject;
             }
         }
     }
-    
+
     //Greater Than or EqualTo
     if ([operator isEqualToString:kOperatorGreaterThanEqual]) {
         if (answerNumber && valueNumber) {
@@ -401,7 +401,7 @@ static APCDummyObject * _dummyObject;
             }
         }
     }
-    
+
     //Less Than or EqualTo
     if ([operator isEqualToString:kOperatorGreaterThanEqual]) {
         if (answerNumber && valueNumber) {
@@ -410,7 +410,7 @@ static APCDummyObject * _dummyObject;
             }
         }
     }
-    
+
     return retValue;
 }
 
@@ -449,25 +449,25 @@ static APCDummyObject * _dummyObject;
 + (ORKAnswerFormat*) rkAnswerFormatFromSBBSurveyConstraints: (SBBSurveyConstraints*) constraints uiHint: (NSString*) hint
 {
     ORKAnswerFormat * retAnswer;
-    
+
     if (!_dummyObject) {
         _dummyObject = [[APCDummyObject alloc] init];
     }
-    
+
     NSString * selectorName = [self lookUpAnswerFormatMethod:NSStringFromClass([constraints class])];
     SEL selector = NSSelectorFromString(selectorName);
-    
+
     NSMutableDictionary * objDict = [NSMutableDictionary dictionary];
     objDict[kConstraintsKey] = constraints;
     if (hint.length > 0) {
         objDict[kUiHintKey] = hint;
     }
-    
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-performSelector-leaks"
     retAnswer = (ORKAnswerFormat*) [_dummyObject performSelector:selector withObject:objDict];
 #pragma clang diagnostic pop
-    
+
     return retAnswer;
 }
 
@@ -549,7 +549,7 @@ static APCDummyObject * _dummyObject;
     NSMutableArray * options = [NSMutableArray array];
     [localConstraints.enumeration enumerateObjectsUsingBlock:^(SBBSurveyQuestionOption* option, NSUInteger __unused idx, BOOL * __unused stop) {
         NSString * detailText = option.detail.length > 0 ? option.detail : nil;
-        ORKTextChoice * choice = [ORKTextChoice choiceWithText:option.label detailText:detailText value:option.value];
+        ORKTextChoice * choice = [ORKTextChoice choiceWithText:option.label detailText:detailText value:option.value exclusive: NO];
         [options addObject: choice];
     }];
     if (localConstraints.allowOtherValue) {
